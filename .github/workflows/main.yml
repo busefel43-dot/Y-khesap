@@ -1,0 +1,70 @@
+name: Build Android AAB and APK
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Generate AAB & APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Kodu Cek
+        uses: actions/checkout@v4
+
+      - name: ZIP Dosyasini Ac
+        run: |
+          ZIP_FILE=$(ls yuk-sefer-projesi*.zip 2>/dev/null | head -n 1)
+          if [ -n "$ZIP_FILE" ]; then
+            echo "Zip dosyasi aciliyor: $ZIP_FILE"
+            unzip -o "$ZIP_FILE"
+          fi
+
+      - name: Node.js Kurulumu
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Java Kurulumu
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Android SDK Kurulumu
+        uses: android-actions/setup-android@v3
+
+      - name: Paketleri Yukle ve Derle
+        run: |
+          npm install
+          npm run build
+          npx cap add android || true
+          npx cap sync android
+
+      - name: AndroidManifest AdMob Ekle
+        run: |
+          MANIFEST="android/app/src/main/AndroidManifest.xml"
+          if [ -f "$MANIFEST" ]; then
+            sed -i '/<application/a \ \ \ \ \ \ \ \ <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-3759490841134440~UYGULAMA_ID_BURAYA" />' "$MANIFEST" || true
+          fi
+
+      - name: AAB ve APK Derle
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew bundleRelease
+          ./gradlew assembleDebug
+
+      - name: Google Play AAB Dosyasini Yukle
+        uses: actions/upload-artifact@v4
+        with:
+          name: google-play-app-release-aab
+          path: android/app/build/outputs/bundle/release/*.aab
+
+      - name: Test APK Dosyasini Yukle
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-kurulum-app-debug-apk
+          path: android/app/build/outputs/apk/debug/*.apk
