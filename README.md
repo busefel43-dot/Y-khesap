@@ -1,0 +1,2 @@
+# Y-khesap
+Yük hesaplma
