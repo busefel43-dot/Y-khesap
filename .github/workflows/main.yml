@@ -16,7 +16,7 @@ jobs:
 
       - name: ZIP Dosyasini Ac
         run: |
-          unzip -o "*.zip" || true
+          find . -maxdepth 2 -name "*.zip" -exec unzip -o {} \;
           ls -la
 
       - name: Node.js Kurulumu
