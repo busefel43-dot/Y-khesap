@@ -16,7 +16,18 @@ jobs:
 
       - name: ZIP Dosyasini Ac
         run: |
-          find . -maxdepth 2 -name "*.zip" -exec unzip -o {} \;
+          for f in *zip* *ZIP*; do
+            if [ -f "$f" ]; then
+              echo "Dosya aciliyor: $f"
+              unzip -o "$f" || true
+            fi
+          done
+          if [ ! -f "package.json" ]; then
+            SUBDIR=$(find . -maxdepth 2 -name "package.json" -exec dirname {} \; | head -n 1)
+            if [ -n "$SUBDIR" ] && [ "$SUBDIR" != "." ]; then
+              cp -r "$SUBDIR"/* . || true
+            fi
+          fi
           ls -la
 
       - name: Node.js Kurulumu
